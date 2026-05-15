@@ -2,17 +2,29 @@ import re
 import itertools
 import json
 import os
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
 from sympy import symbols, Or, And, Not
 from sympy.logic import SOPform
 
-app = Flask(__name__, static_url_path='', static_folder='static')
-# Necesitamos una "llave secreta" para mantener la sesión del usuario iniciada
+# Inicializamos Flask de forma normal
+app = Flask(__name__)
 app.secret_key = 'karnaugh_seguridad_maxima_123' 
 
 ARCHIVO_CODIGOS = 'codigos.json'
 
-# --- LÓGICA DE SEGURIDAD ---
+# =====================================================================
+# MAPA A PRUEBA DE BALAS PARA RENDER (Forzamos la ruta de los archivos)
+# =====================================================================
+@app.route('/scripts/<path:filename>')
+def serve_scripts(filename):
+    return send_from_directory('static/scripts', filename)
+
+@app.route('/images/<path:filename>')
+def serve_images(filename):
+    return send_from_directory('static/images', filename)
+
+# =====================================================================
+
 def cargar_codigos():
     if os.path.exists(ARCHIVO_CODIGOS):
         with open(ARCHIVO_CODIGOS, 'r') as f:
@@ -32,11 +44,8 @@ def login():
 
         if codigo_ingresado in codigos:
             if codigos[codigo_ingresado] == False:
-                # El código es válido y no ha sido usado. ¡Lo quemamos!
                 codigos[codigo_ingresado] = True
                 guardar_codigos(codigos)
-                
-                # Le damos acceso a esta computadora
                 session['autenticado'] = True
                 return redirect(url_for('index'))
             else:
@@ -51,10 +60,8 @@ def logout():
     session.pop('autenticado', None)
     return redirect(url_for('login'))
 
-# --- RUTAS PROTEGIDAS ---
 @app.route('/')
 def index():
-    # Si no tiene sesión activa, lo pateamos a la pantalla de login
     if not session.get('autenticado'):
         return redirect(url_for('login'))
     return render_template('index.html')
