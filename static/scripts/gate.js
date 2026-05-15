@@ -163,6 +163,69 @@ function GateType(name, width, height, inputs, outputs)
 	}
 }
 
+
+// =========================================================================
+// NUESTRO MOTOR MATEMÁTICO (Integrado directamente en el archivo base)
+// =========================================================================
+function calcularEcuacionLogica(g, visitados) {
+    if (!g || !g.type) return "";
+    if (!visitados) visitados = new Set();
+    if (visitados.has(g)) return "[Bucle]";
+    visitados.add(g);
+    
+    var n = g.type.name;
+    if (n === "IN" || n === "CLOCK" || n === "ICINPUT" || n === "TSWITCH" || n === "PSWITCHA" || n === "PSWITCHB") {
+        var lbl = (g.label && g.label.trim() !== "") ? g.label.trim() : "";
+        return lbl !== "" ? lbl : "?"; 
+    }
+    
+    var links = (typeof g.getLinkableInputs === 'function') ? g.getLinkableInputs() : [];
+    var in0 = (links.length > 0 && links[0] && links[0].gate) ? calcularEcuacionLogica(links[0].gate, new Set(visitados)) : "";
+    var in1 = (links.length > 1 && links[1] && links[1].gate) ? calcularEcuacionLogica(links[1].gate, new Set(visitados)) : "";
+    
+    if (n === "NOT" || n === "BUF") {
+        if (!in0) return "";
+        if (n === "BUF") return in0;
+        return in0.length > 1 ? "(" + in0 + ")'" : in0 + "'";
+    }
+    if (n === "AND") {
+        if (!in0 || !in1) return "";
+        var left = (in0.includes("+") || in0.includes("⊕")) ? "(" + in0 + ")" : in0;
+        var right = (in1.includes("+") || in1.includes("⊕")) ? "(" + in1 + ")" : in1;
+        return left + right;
+    }
+    if (n === "OR") {
+        if (!in0 || !in1) return "";
+        return in0 + "+" + in1;
+    }
+    if (n === "NAND") {
+        if (!in0 || !in1) return "";
+        var left = (in0.includes("+") || in0.includes("⊕")) ? "(" + in0 + ")" : in0;
+        var right = (in1.includes("+") || in1.includes("⊕")) ? "(" + in1 + ")" : in1;
+        return "(" + left + right + ")'";
+    }
+    if (n === "NOR") {
+        if (!in0 || !in1) return "";
+        return "(" + in0 + "+" + in1 + ")'";
+    }
+    if (n === "XOR") {
+        if (!in0 || !in1) return "";
+        var left = (in0.includes("+") || in0.includes("⊕")) ? "(" + in0 + ")" : in0;
+        var right = (in1.includes("+") || in1.includes("⊕")) ? "(" + in1 + ")" : in1;
+        return left + "⊕" + right;
+    }
+    if (n === "XNOR") {
+        if (!in0 || !in1) return "";
+        var left = (in0.includes("+") || in0.includes("⊕")) ? "(" + in0 + ")" : in0;
+        var right = (in1.includes("+") || in1.includes("⊕")) ? "(" + in1 + ")" : in1;
+        return "(" + left + "⊕" + right + ")'";
+    }
+    return ""; 
+}
+
+// =========================================================================
+// EL MOLDE ORIGINAL MODIFICADO
+// =========================================================================
 function DefaultGate(name, image, renderOverride, inputs, outputs)
 {
 	this.__proto__ = new GateType(name, image.width, image.height, inputs, outputs);
@@ -180,8 +243,28 @@ function DefaultGate(name, image, renderOverride, inputs, outputs)
 		if (!this.renderOverride) {
 			context.drawImage(this.image, x, y);
 		}
+
+        // --- LA INYECCIÓN DEL TEXTO ---
+        try {
+            if (gate && this.name !== "IN" && this.name !== "OUT" && this.name !== "CLOCK" && this.name !== "TSWITCH" && this.name !== "PSWITCHA" && this.name !== "PSWITCHB") {
+                var texto = calcularEcuacionLogica(gate);
+                if (texto && texto !== "") {
+                    context.save();
+                    context.font = "bold 13px monospace";
+                    // Rojo si lleva energía, gris oscuro si es 0
+                    var isHigh = (gate.getOutputs && gate.getOutputs().length > 0 && gate.getOutputs()[0]);
+                    context.fillStyle = isHigh ? "#e74c3c" : "#2c3e50";
+                    
+                    var ancho = context.measureText(texto).width;
+                    // Dibujamos centrado justo por encima de la imagen
+                    context.fillText(texto, x + (this.width / 2) - (ancho / 2), y - 8);
+                    context.restore();
+                }
+            }
+        } catch(e) {
+            console.error("Error pintando ecuación:", e);
+        }
 	}
-	
 }
 
 function CustomIC(name, environment)
