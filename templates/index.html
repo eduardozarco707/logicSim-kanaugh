@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Solucionador de Karnaugh y Circuitos</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; overflow-x: hidden; }
+        
+        /* PESTAÑAS */
+        .tabs-header { display: flex; gap: 5px; max-width: 1200px; margin: auto; margin-bottom: -10px; z-index: 10; position: relative; }
+        .tab-btn { padding: 12px 30px; font-size: 16px; font-weight: bold; border: 2px solid #bdc3c7; border-bottom: none; border-radius: 10px 10px 0 0; background: #e9ecef; color: #7f8c8d; cursor: pointer; transition: all 0.2s; outline: none; }
+        .tab-btn:hover { background: #d5d8dc; }
+        .tab-btn.active { background: white; color: #2c3e50; border-color: white; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); }
+
+        /* KMAP CSS */
+        #contenedor_karnaugh { display: flex; gap: 20px; max-width: 1200px; margin: auto; align-items: flex-start; background: white; padding: 25px; border-radius: 0 12px 12px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; min-height: 650px; }
+        #contenedor_karnaugh .panel-izquierdo { width: 300px; position: sticky; top: 20px; border-right: 2px dashed #ecf0f1; padding-right: 20px; z-index: 2; background: white; }
+        #contenedor_karnaugh .panel-derecho { flex: 1; position: relative; width: 100%; min-width: 500px; }
+        #contenedor_karnaugh h2, #contenedor_karnaugh h3 { color: #2c3e50; text-align: center; margin-top: 0; }
+        #contenedor_karnaugh .lbl-titulo { display: block; margin-top: 15px; font-weight: bold; color: #34495e; font-size: 14px; }
+        #contenedor_karnaugh input[type="number"], #contenedor_karnaugh input[type="text"]:not(.var-box) { margin-top: 8px; padding: 10px; width: 100%; border: 1px solid #dcdde1; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        #contenedor_karnaugh input[readonly] { background-color: #e9ecef; color: #495057; font-weight: bold; outline: none; }
+        #contenedor_karnaugh .grid-vars { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        #contenedor_karnaugh .var-box { width: 40px; height: 40px; text-align: center; font-size: 16px; font-weight: bold; border: 2px solid #3498db; border-radius: 6px; color: #2c3e50; text-transform: uppercase; outline: none; }
+        #contenedor_karnaugh .constructor-container { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px dashed #bdc3c7; margin-top: 15px; }
+        #contenedor_karnaugh .grid-vars-small { display: flex; gap: 8px; margin-bottom: 15px; justify-content: center; }
+        #contenedor_karnaugh .var-box-small { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; border: 2px solid #95a5a6; border-radius: 6px; cursor: pointer; user-select: none; background-color: white; color: #2c3e50; }
+        #contenedor_karnaugh .var-box-small.negada { background-color: #e74c3c; border-color: #c0392b; color: white; }
+        #contenedor_karnaugh .btn-add { background-color: #f39c12; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 14px; }
+        #contenedor_karnaugh button[type="submit"] { cursor: pointer; background-color: #3498db; color: white; border: none; font-weight: bold; margin-top: 20px; padding: 12px; width: 100%; border-radius: 6px; font-size: 16px; }
+        #contenedor_karnaugh .lista-terminos { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; min-height: 30px; }
+        #contenedor_karnaugh .badge { background: #2c3e50; color: white; padding: 5px 12px; border-radius: 15px; font-family: monospace; font-size: 14px; display: flex; gap: 8px; align-items: center; }
+        #contenedor_karnaugh .badge span { cursor: pointer; color: #e74c3c; font-weight: bold; }
+        #contenedor_karnaugh table.tabla-verdad { width: 100%; border-collapse: collapse; margin-top: 10px; text-align: center; font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 13px; }
+        #contenedor_karnaugh table.tabla-verdad th, #contenedor_karnaugh table.tabla-verdad td { border: 1px solid #bdc3c7; padding: 4px 6px; }
+        #contenedor_karnaugh table.tabla-verdad th { background-color: #34495e; color: white; padding: 6px; }
+        #contenedor_karnaugh td.res { font-weight: bold; color: #95a5a6; }
+        #contenedor_karnaugh td.res.activo { background-color: #2ecc71; color: white; }
+        #contenedor_karnaugh .toggle-container { display: flex; gap: 10px; justify-content: center; margin: 15px 0 10px 0; width: 100%; }
+        #contenedor_karnaugh .btn-modo { flex: 1; padding: 8px; font-size: 13px; font-weight: bold; border: 2px solid #bdc3c7; border-radius: 6px; cursor: pointer; background: white; color: #7f8c8d; transition: all 0.2s; }
+        #contenedor_karnaugh .btn-modo.active { border-color: #3498db; background-color: #ebf5fb; color: #2980b9; }
+        #contenedor_karnaugh .paleta-colores { display: none; gap: 10px; justify-content: center; margin-bottom: 10px; padding: 10px; background: #fdfefe; border: 1px dashed #bdc3c7; border-radius: 6px; width: 90%; }
+        #contenedor_karnaugh .color-btn { width: 25px; height: 25px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: transform 0.2s; }
+        #contenedor_karnaugh .color-btn.active { border-color: #2c3e50; transform: scale(1.2); }
+        #contenedor_karnaugh .kmap-container { display: flex; justify-content: center; overflow-x: auto; width: 100%; }
+        #contenedor_karnaugh .kmap-table { border-collapse: separate; border-spacing: 3px; text-align: center; font-family: 'Segoe UI', sans-serif; }
+        #contenedor_karnaugh .kmap-corner { position: relative; width: 45px; height: 45px; }
+        #contenedor_karnaugh .kmap-corner::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to bottom right, transparent 48%, #95a5a6 49%, #95a5a6 51%, transparent 52%); z-index: 1; }
+        #contenedor_karnaugh .var-top { position: absolute; top: 2px; right: 4px; font-size: 11px; font-weight: bold; color: #34495e; z-index: 2; }
+        #contenedor_karnaugh .var-left { position: absolute; bottom: 2px; left: 4px; font-size: 11px; font-weight: bold; color: #34495e; z-index: 2; }
+        #contenedor_karnaugh .kmap-header { color: #bdc3c7; font-size: 13px; font-weight: bold; border: none; padding: 3px; }
+        #contenedor_karnaugh .kmap-cell { width: 48px; height: 48px; border: 2px solid #2c3e50; border-radius: 6px; position: relative; background: white; transition: all 0.2s; }
+        #contenedor_karnaugh .kmap-cell.interactive { cursor: pointer; }
+        #contenedor_karnaugh .kmap-cell.interactive:hover { background-color: #f0f3f4; }
+        #contenedor_karnaugh .kmap-val { font-size: 22px; font-weight: bold; color: #2c3e50; line-height: 48px; margin: 0; padding: 0; }
+        #contenedor_karnaugh .kmap-idx { position: absolute; bottom: 2px; left: 0; right: 0; text-align: center; font-size: 10px; color: #bdc3c7; font-weight: bold; line-height: 1; }
+        #contenedor_karnaugh .activo-kmap { color: #3498db; }
+        #contenedor_karnaugh .explicacion-zona { width: 100%; margin-top: 15px; border-top: 2px dashed #bdc3c7; padding-top: 15px; text-align: center; display: none; }
+        #contenedor_karnaugh .mini-tablas-grid { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+        #contenedor_karnaugh .mini-tabla-container { display: flex; flex-direction: column; align-items: center; }
+        #contenedor_karnaugh .mini-tabla { border-collapse: collapse; text-align: center; font-size: 13px; font-family: monospace; }
+        #contenedor_karnaugh .mini-tabla th { padding: 3px 10px; border: 1px solid #7f8c8d; color: white; }
+        #contenedor_karnaugh .mini-tabla td { padding: 3px 10px; border: 1px solid #bdc3c7; color: #2c3e50; }
+        #contenedor_karnaugh .tachado { position: relative; color: #95a5a6; }
+        #contenedor_karnaugh .tachado::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background-color: red; transform: translateX(-50%); z-index: 2; }
+        #contenedor_karnaugh #caja_resultado { display: none; margin-top: 15px; padding: 10px; width: auto; min-width: 200px; background: #e8f8f5; border: 2px solid #1abc9c; border-radius: 6px; text-align: center; }
+        .overline { text-decoration: overline; }
+
+        /* CIRCUITO CSS */
+        #contenedor_circuito { display: none; gap: 10px; max-width: 100%; margin: 0; align-items: stretch; background: white; padding: 10px; border-radius: 0 12px 12px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); height: calc(100vh - 80px); box-sizing: border-box; }
+        .panel-ecuacion-circuito { width: 150px; background: #e8f8f5; border: 1px dashed #1abc9c; border-radius: 6px; padding: 10px; text-align: center; overflow: visible; display: flex; flex-direction: column; }
+        .panel-ecuacion-circuito h3 { color: #16a085; font-size: 12px; margin-top: 0; border-bottom: 1px solid #a3e4d7; padding-bottom: 5px; text-transform: uppercase; }
+        .obj-ecuacion { font-size: 15px; font-weight: bold; color: #2c3e50; margin: 10px 0; word-wrap: break-word; font-family: monospace; }
+        .panel-canvas-circuito { flex: 1; position: relative; border: 1px solid #bdc3c7; border-radius: 6px; background: #fff; overflow: hidden; }
+        .panel-canvas-circuito.panning { cursor: grabbing !important; }
+        .panel-logicsim-derecho { width: 200px; background: #fdfefe; border: 1px solid #ecf0f1; border-radius: 6px; padding: 8px; overflow-y: auto; font-size: 11px; }
+        .panel-logicsim-derecho h3 { color: #2980b9; font-size: 13px; border-bottom: 1px solid #3498db; padding-bottom: 3px; margin: 5px 0; }
+        table.TruthTable { width: 100% !important; font-size: 10px !important; }
+        table.TruthTable th { padding: 3px !important; }
+        table.TruthTable td { padding: 2px !important; }
+        ul.Expression { font-size: 10px !important; margin: 5px 0 !important; }
+
+        /* ÁLGEBRA CSS - DISEÑO DE DOS COLUMNAS E INGRESO MANUAL */
+        #contenedor_algebra { display: none; background: white; padding: 40px; border-radius: 0 12px 12px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 1000px; margin: auto; min-height: 600px; }
+        .algebra-header { text-align: center; color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 15px; margin-bottom: 20px; font-size: 26px; text-transform: uppercase; font-weight: normal; font-family: 'Segoe UI', Arial, sans-serif;}
+        .teclado-algebra { background: #f8f9fa; border: 1px solid #bdc3c7; border-radius: 8px; padding: 20px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        .fila-teclas { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+        .tecla-btn { background: white; border: 2px solid #bdc3c7; color: #2c3e50; font-size: 16px; font-weight: bold; padding: 10px 15px; border-radius: 6px; cursor: pointer; transition: all 0.1s; min-width: 45px; box-shadow: 0 2px 0 #bdc3c7; }
+        .tecla-btn:hover { background: #ecf0f1; transform: translateY(2px); box-shadow: 0 0 0 #bdc3c7; }
+        .tecla-btn:active { background: #d5d8dc; }
+        .tecla-negacion { background: #e74c3c; color: white; border-color: #c0392b; box-shadow: 0 2px 0 #c0392b; }
+        .tecla-todo { background: #2980b9; color: white; border-color: #2471a3; box-shadow: 0 2px 0 #2471a3; }
+        .tecla-borrar { background: #34495e; color: white; border-color: #2c3e50; box-shadow: 0 2px 0 #2c3e50; }
+        #input_ecuacion_algebra { width: 100%; padding: 15px; font-size: 20px; text-align: center; border: 2px solid #3498db; border-radius: 6px; box-sizing: border-box; text-transform: uppercase; letter-spacing: 2px; font-family: monospace; color: #2980b9; font-weight: bold; outline: none; margin-bottom: 15px; }
+        .btn-resolver { background-color: #2c3e50; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; width: 100%; box-shadow: 0 4px 0 #1a252f; transition: all 0.1s; text-transform: uppercase; }
+        .btn-resolver:hover { background-color: #1a252f; transform: translateY(2px); box-shadow: 0 2px 0 #1a252f; }
+        .btn-resolver:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
+
+        /* VISTA PREVIA EN VIVO (CAJA ROJA RESTAURADA) */
+        #display_ecuacion_algebra { font-size: 24px; color: red; text-align: center; margin-top: 20px; padding: 15px; background: #fffdfd; border: 2px dashed #f5b7b1; border-radius: 8px; min-height: 40px; overflow-x: auto; }
+
+        /* DISEÑO DE PASOS DE RESOLUCIÓN */
+        .seccion-titulo { text-align: center; color: #168e9e; font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 20px; font-family: 'Segoe UI', Arial, sans-serif; text-transform: uppercase; letter-spacing: 1px;}
+        .paso-fila { display: flex; align-items: center; margin-bottom: 20px; border: 1px solid #ecf0f1; background: #fdfefe; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; }
+        
+        /* Cajas de color para las explicaciones */
+        .paso-explicacion { flex: 0 0 35%; background: rgba(230, 126, 34, 0.1); padding: 20px; border-right: 4px solid #e67e22; display: flex; flex-direction: column; justify-content: center; height: 100%; color: #2c3e50; font-size: 14px; font-weight: bold; line-height: 1.4; }
+        .paso-explicacion-verde { background: rgba(39, 174, 96, 0.1); border-right: 4px solid #27ae60; }
+        
+        .paso-matematica { flex: 1; padding: 20px; font-size: 22px; text-align: center; overflow-x: auto; }
+        .entrada-original { font-size: 24px; text-align: center; color: #34495e; padding: 15px; border-bottom: 2px dashed #ecf0f1; margin-bottom: 20px; }
+        .respuesta-final-latex { font-size: 24px; text-align: left; max-width: 800px; margin: 10px auto; overflow-x: auto; color: #000; border-top: 1px solid #bdc3c7; padding-top: 20px; }
+    </style>
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <script>
+        window.calcularEcuacion = function(g, visitados) {
+            if (!g || !g.type) return "";
+            if (!visitados) visitados = new Set();
+            if (visitados.has(g)) return "[Bucle]";
+            visitados.add(g);
+            
+            let n = g.type.name;
+            if (n === "IN" || n === "CLOCK" || n === "ICINPUT" || n === "TSWITCH" || n === "PSWITCHA" || n === "PSWITCHB") {
+                let lbl = (g.label && g.label.trim() !== "") ? g.label.trim() : "";
+                return lbl !== "" ? lbl : "?"; 
+            }
+            
+            let links = (typeof g.getLinkableInputs === 'function') ? g.getLinkableInputs() : [];
+            let in0 = (links.length > 0 && links[0] && links[0].gate) ? window.calcularEcuacion(links[0].gate, new Set(visitados)) : "";
+            let in1 = (links.length > 1 && links[1] && links[1].gate) ? window.calcularEcuacion(links[1].gate, new Set(visitados)) : "";
+            
+            if (n === "NOT" || n === "BUF") {
+                if (!in0) return "";
+                if (n === "BUF") return in0;
+                return in0.length > 1 ? "(" + in0 + ")'" : in0 + "'";
+            }
+            if (n === "AND") {
+                if (!in0 || !in1) return "";
+                let left = (in0.includes("+") || in0.includes("⊕")) ? "(" + in0 + ")" : in0;
+                let right = (in1.includes("+") || in1.includes("⊕")) ? "(" + in1 + ")" : in1;
+                return left + right;
+            }
+            if (n === "OR") {
+                if (!in0 || !in1) return "";
+                return in0 + "+" + in1;
+            }
+            if (n === "NAND") {
+                if (!in0 || !in1) return "";
+                let left = (in0.includes("+") || in0.includes("⊕")) ? "(" + in0 + ")" : in0;
+                let right = (in1.includes("+") || in1.includes("⊕")) ? "(" + in1 + ")" : in1;
+                return "(" + left + right + ")'";
+            }
+            if (n === "NOR") {
+                if (!in0 || !in1) return "";
+                return "(" + in0 + "+" + in1 + ")'";
+            }
+            if (n === "XOR") {
+                if (!in0 || !in1) return "";
+                let left = (in0.includes("+") || in0.includes("⊕")) ? "(" + in0 + ")" : in0;
+                let right = (in1.includes("+") || in1.includes("⊕")) ? "(" + in1 + ")" : in1;
+                return left + "⊕" + right;
+            }
+            if (n === "XNOR") {
+                if (!in0 || !in1) return "";
+                let left = (in0.includes("+") || in0.includes("⊕")) ? "(" + in0 + ")" : in0;
+                let right = (in1.includes("+") || in1.includes("⊕")) ? "(" + in1 + ")" : in1;
+                return "(" + left + "⊕" + right + ")'";
+            }
+            return ""; 
+        };
+
+        const originalDrawImage = CanvasRenderingContext2D.prototype.drawImage;
+        CanvasRenderingContext2D.prototype.drawImage = function(image, ...args) {
+            try { if (image && image.complete && image.naturalWidth > 0) { originalDrawImage.apply(this, [image, ...args]); } } catch (e) {}
+        };
+    </script>
+</head>
+<body>
+
+    <div class="tabs-header">
+        <button id="tabBtn_karnaugh" class="tab-btn active" onclick="cambiarPestana('karnaugh')">Mapa Karnaugh</button>
+        <button id="tabBtn_circuito" class="tab-btn" onclick="cambiarPestana('circuito')">Circuito Lógico</button>
+        <button id="tabBtn_algebra" class="tab-btn" onclick="cambiarPestana('algebra')">Álgebra Booleana</button>
+    </div>
+
+    <div id="contenedor_karnaugh">
+        <div class="panel-izquierdo">
+            <h2>Panel de Control</h2>
+            <form id="mainForm" onsubmit="enviarDatos(event)">
+                <label for="input_entradas" class="lbl-titulo">Número de entrada:</label>
+                <input type="number" id="input_entradas" min="2" max="4" value="3" required oninput="actualizarInterfaz()">
+                <label for="input_salida" class="lbl-titulo">Salida (total combinaciones):</label>
+                <input type="number" id="input_salida" value="8" readonly>
+                <div class="lbl-titulo">Nombres de las variables:</div>
+                <div id="contenedor_variables" class="grid-vars"></div>
+                <div class="constructor-container">
+                    <div style="text-align: center; font-weight: bold; color: #34495e; font-size: 14px; margin-bottom: 8px;">Clic en letra para NEGAR (Rojo = 0):</div>
+                    <div id="constructor_termino" class="grid-vars-small"></div>
+                    <button type="button" class="btn-add" onclick="agregarTermino()">+ Añadir término a la ecuación</button>
+                </div>
+                <div class="lbl-titulo">Ecuación generada:</div>
+                <div id="lista_visual" class="lista-terminos"></div>
+                <button type="submit">Calcular Solución</button>
+            </form>
+        </div>
+        <div class="panel-derecho">
+            <h2 style="margin-bottom: 5px;">Tabla de Verdad</h2>
+            <div id="tabla_excel" style="width: 100%; display: flex; justify-content: center;"></div>
+            <h2 style="margin-top: 25px; margin-bottom: 0;">Mapa de Karnaugh</h2>
+            <div class="toggle-container">
+                <button type="button" id="btn_pred" class="btn-modo active" onclick="cambiarModo('predeterminada')">Agrupación Predeterminada</button>
+                <button type="button" id="btn_pers" class="btn-modo" onclick="cambiarModo('personalizada')">Agrupación Personalizada</button>
+            </div>
+            <div id="paleta_colores" class="paleta-colores">
+                <span style="font-size: 12px; color: #7f8c8d; line-height: 25px;">Elige color y agrupa los '1':</span>
+                <div class="color-btn active" style="background: #f1c40f" onclick="seleccionarColor(0)"></div>
+                <div class="color-btn" style="background: #2ecc71" onclick="seleccionarColor(1)"></div>
+                <div class="color-btn" style="background: #3498db" onclick="seleccionarColor(2)"></div>
+                <div class="color-btn" style="background: #9b59b6" onclick="seleccionarColor(3)"></div>
+                <div class="color-btn" style="background: #e74c3c" onclick="seleccionarColor(4)"></div>
+            </div>
+            <div id="kmap_container" class="kmap-container"></div>
+            <div id="zona_explicacion" class="explicacion-zona">
+                <h3 style="color: #34495e; font-size: 16px; margin: 0 0 10px 0;">Análisis de Agrupaciones</h3>
+                <div id="contenedor_mini_tablas" class="mini-tablas-grid"></div>
+            </div>
+            <div id="caja_resultado">
+                <span style="color: #e74c3c; font-size: 12px; font-weight:bold;">RESULTADO FINAL:</span><br>
+                <div id="texto_resultado" style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 20px; font-weight: bold; color: #2c3e50; margin-top: 5px; letter-spacing: 1px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="contenedor_circuito">
+        <div class="panel-ecuacion-circuito">
+            <h3>Objetivo</h3>
+            <div id="texto_objetivo_circuito" class="obj-ecuacion">--</div>
+            <p style="font-size: 10px; color: #95a5a6; margin-top: 10px;">Haz clic derecho en las entradas > "Editar Etiqueta".</p>
+            <p style="font-size: 10px; color: #3498db; margin-top: 5px; font-weight: bold;">(Rueda del Ratón o ALT+Clic para mover cámara)</p>
+        </div>
+        
+        <div id="panel_canvas_container" class="panel-canvas-circuito">
+            <canvas id="canvas" style="position: absolute; top:0; left:0;"></canvas>
+        </div>
+        
+        <div class="panel-logicsim-derecho">
+            <div id="expressionContainer"><h3>Expresión</h3></div>
+            <div id="tableContainer"><h3>Verdad</h3></div>
+        </div>
+    </div>
+
+    <div id="contenedor_algebra">
+        <h1 class="algebra-header">Calculadora de Álgebra Booleana</h1>
+        <div class="teclado-algebra">
+            <div class="fila-teclas">
+                <button class="tecla-btn" onclick="agregarAlAlgebra('A')">A</button>
+                <button class="tecla-btn" onclick="agregarAlAlgebra('B')">B</button>
+                <button class="tecla-btn" onclick="agregarAlAlgebra('C')">C</button>
+                <button class="tecla-btn" onclick="agregarAlAlgebra('D')">D</button>
+                <button class="tecla-btn" onclick="agregarAlAlgebra('X')">X</button>
+                <button class="tecla-btn" onclick="agregarAlAlgebra('Y')">Y</button>
+                <button class="tecla-btn" onclick="agregarAlAlgebra('9')">9</button>
+                <button class="tecla-btn" onclick="agregarAlAlgebra('0')">0</button>
+            </div>
+            <div class="fila-teclas">
+                <button class="tecla-btn" onclick="agregarAlAlgebra('+')">OR ( + )</button>
+                <button class="tecla-btn" onclick="agregarAlAlgebra('*')">AND ( · )</button>
+                <button class="tecla-btn" onclick="agregarAlAlgebra('(')">(</button>
+                <button class="tecla-btn" onclick="agregarAlAlgebra(')')">)</button>
+                <button class="tecla-btn tecla-negacion" onclick="agregarAlAlgebra('\'')">Negar ( ' )</button>
+                <button class="tecla-btn tecla-todo" onclick="negarTodaLaEcuacion()">[ ]' Negar Todo</button>
+                <button class="tecla-btn tecla-borrar" onclick="borrarDelAlgebra()">⌫ Borrar</button>
+            </div>
+            
+            <input type="text" id="input_ecuacion_algebra" placeholder="Ejemplo: A(A+B)'" oninput="actualizarEcuacionAlgebra()">
+            <button class="btn-resolver" onclick="resolverAlgebra()">Calcular Solución</button>
+            <p id="error_algebra" style="color: red; text-align: center; font-weight: bold; display: none; margin-top: 10px;"></p>
+            
+            <div id="display_ecuacion_algebra" style="font-size: 24px; color: red; text-align: center; margin-top: 20px; padding: 15px; background: #fffdfd; border: 2px dashed #f5b7b1; border-radius: 8px; min-height: 40px; overflow-x: auto;">
+                $$ \color{red}{\text{Tu ecuación aparecerá aquí}} $$
+            </div>
+        </div>
+
+        <div id="resultados_algebra" style="display: none;">
+            <h2 class="seccion-titulo">TU ENTRADA</h2>
+            <div class="entrada-original" id="entrada_inline"></div>
+            
+            <h2 class="seccion-titulo">SOLUCIÓN</h2>
+            <div id="display_resultado_algebra">
+                </div>
+            
+            <h2 class="seccion-titulo">RESPUESTA</h2>
+            <div class="respuesta-final-latex" id="respuesta_final_latex">
+                </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/lz-string-1.3.3.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/extends.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/helpers.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/button.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/gate.js') }}?v=999"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/wiregroup.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/wire.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/toolbar.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/saving.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/environment.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/popupmenu.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/expressions.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/logicsim.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/logicsimexpr.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/editor_simple.js') }}"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            actualizarInterfaz();
+        });
+
+        let logicSimIniciado = false;
+
+        function forzarArranque() {
+            if (logicSimIniciado) return;
+            logicSimIniciado = true;
+            if (typeof runApp === 'function') { try { runApp(); } catch(e) {} }
+        }
+
+        function cambiarPestana(pestana) {
+            let vKarnaugh = document.getElementById('contenedor_karnaugh');
+            let vCircuito = document.getElementById('contenedor_circuito');
+            let vAlgebra = document.getElementById('contenedor_algebra');
+
+            document.getElementById('tabBtn_karnaugh').classList.remove('active');
+            document.getElementById('tabBtn_circuito').classList.remove('active');
+            document.getElementById('tabBtn_algebra').classList.remove('active');
+            
+            vKarnaugh.style.display = 'none';
+            vCircuito.style.display = 'none';
+            vAlgebra.style.display = 'none';
+
+            if(pestana === 'karnaugh') {
+                document.getElementById('tabBtn_karnaugh').classList.add('active');
+                vKarnaugh.style.display = 'flex';
+                generarTablaVerdad(parseInt(document.getElementById('input_entradas').value));
+            } else if(pestana === 'circuito') {
+                document.getElementById('tabBtn_circuito').classList.add('active');
+                vCircuito.style.display = 'flex';
+                
+                let pCvs = document.getElementById('panel_canvas_container');
+                let cvs = document.getElementById('canvas');
+                cvs.width = pCvs.clientWidth;
+                cvs.height = pCvs.clientHeight;
+                
+                if (!logicSimIniciado) {
+                    if (typeof images !== 'undefined' && !images.allImagesLoaded()) { images.onAllLoaded = forzarArranque; } 
+                    else { forzarArranque(); }
+                    setTimeout(forzarArranque, 500);
+                } else if (typeof logicSim !== 'undefined') { logicSim.centerOnCanvas(); }
+            } else if(pestana === 'algebra') {
+                document.getElementById('tabBtn_algebra').classList.add('active');
+                vAlgebra.style.display = 'block';
+                document.getElementById('input_ecuacion_algebra').focus();
+            }
+        }
+
+        window.addEventListener('resize', function() {
+            if (logicSimIniciado && document.getElementById('contenedor_circuito').style.display === 'flex') {
+                let pCvs = document.getElementById('panel_canvas_container');
+                let cvs = document.getElementById('canvas');
+                cvs.width = pCvs.clientWidth;
+                cvs.height = pCvs.clientHeight;
+                if (typeof logicSim !== 'undefined') logicSim.centerOnCanvas();
+            }
+        });
+
+        // =========================================================
+        // EL CEREBRO DEL ÁLGEBRA BOOLEANA
+        // =========================================================
+        let mathjaxPromise = Promise.resolve();
+
+        function convertirBooleanoALatex(expr) {
+            let tex = expr.replace(/\*/g, '');
+            tex = tex.replace(/([A-Z][0-9]*)''/g, '\\overline{\\overline{$1}}');
+            tex = tex.replace(/([A-Z][0-9]*)'/g, '\\overline{$1}');
+            
+            let changed = true;
+            while (changed) {
+                changed = false;
+                let match = tex.match(/\)''|\)'/);
+                if (match) {
+                    let quoteStr = match[0]; 
+                    let idx = match.index; 
+                    let openIdx = -1;
+                    let depth = 0;
+                    for (let i = idx; i >= 0; i--) {
+                        if (tex[i] === ')') depth++;
+                        else if (tex[i] === '(') depth--;
+                        if (depth === 0) { openIdx = i; break; }
+                    }
+                    if (openIdx !== -1) {
+                        let bloque = tex.substring(openIdx, idx + 1);
+                        let isDouble = (quoteStr === ")''");
+                        let replacement = isDouble ? '\\overline{\\overline{' + bloque + '}}' : '\\overline{' + bloque + '}';
+                        tex = tex.substring(0, openIdx) + replacement + tex.substring(idx + quoteStr.length);
+                        changed = true;
+                    } else {
+                        tex = tex.substring(0, idx + 1) + (quoteStr === ")''" ? "^{\\prime\\prime}" : "^{\\prime}") + tex.substring(idx + quoteStr.length);
+                    }
+                }
+            }
+            return tex;
+        }
+
+        function convertirASympy(expr) {
+            let res = expr.replace(/\s+/g, '');
+            res = res.replace(/([A-Z0-9\)'\]])(?=[A-Z0-9\(\[])/g, '$1*');
+            res = res.replace(/\*/g, '&').replace(/\+/g, '|');
+            
+            let changed = true;
+            while (changed) {
+                changed = false;
+                let match = res.match(/\)''|\)'|([A-Z0-9])''|([A-Z0-9])'/);
+                if (match) {
+                    let quoteStr = match[0];
+                    let isDouble = quoteStr.endsWith("''");
+                    let isParen = quoteStr.startsWith(")");
+                    let idx = match.index;
+
+                    if (isParen) {
+                        let openIdx = -1;
+                        let depth = 0;
+                        for (let i = idx; i >= 0; i--) {
+                            if (res[i] === ')') depth++;
+                            else if (res[i] === '(') depth--;
+                            if (depth === 0) { openIdx = i; break; }
+                        }
+                        if (openIdx !== -1) {
+                            let bloque = res.substring(openIdx, idx + 1);
+                            let replacement = isDouble ? bloque : '~' + bloque;
+                            res = res.substring(0, openIdx) + replacement + res.substring(idx + quoteStr.length);
+                            changed = true;
+                        } else { res = res.replace(quoteStr, ""); }
+                    } else {
+                        let varMatch = quoteStr.replace(/'/g, '');
+                        let replacement = isDouble ? varMatch : '~' + varMatch;
+                        res = res.substring(0, idx) + replacement + res.substring(idx + quoteStr.length);
+                        changed = true;
+                    }
+                }
+            }
+            return res;
+        }
+
+        function sympyToLatex(sympyStr) {
+            let s = sympyStr;
+            if (s === "True") return "1";
+            if (s === "False") return "0";
+
+            s = s.replace(/\s+/g, '').replace(/\|/g, '+').replace(/&/g, ' \\cdot ');
+
+            let changed = true;
+            while (changed) {
+                changed = false;
+                let match = s.match(/~\(|~([A-Z0-9]+)/);
+                if (match) {
+                    let idx = match.index;
+                    let isParen = match[0] === "~(";
+
+                    if (isParen) {
+                        let closeIdx = -1;
+                        let depth = 0;
+                        for (let i = idx + 1; i < s.length; i++) {
+                            if (s[i] === '(') depth++;
+                            else if (s[i] === ')') {
+                                depth--; 
+                                if (depth === 0) { closeIdx = i; break; }
+                            }
+                        }
+                        if (closeIdx !== -1) {
+                            let bloque = s.substring(idx + 2, closeIdx);
+                            s = s.substring(0, idx) + '\\overline{' + bloque + '}' + s.substring(closeIdx + 1);
+                            changed = true;
+                        } else {
+                            s = s.replace("~(", "(");
+                            changed = true;
+                        }
+                    } else {
+                        let varMatch = match[1];
+                        s = s.substring(0, idx) + '\\overline{' + varMatch + '}' + s.substring(idx + match[0].length);
+                        changed = true;
+                    }
+                }
+            }
+            return s;
+        }
+
+        function actualizarEcuacionAlgebra() {
+            let input = document.getElementById('input_ecuacion_algebra');
+            let textoLimpio = input.value.toUpperCase();
+            input.value = textoLimpio;
+            let display = document.getElementById('display_ecuacion_algebra');
+            
+            if (textoLimpio.trim() === "") {
+                display.innerHTML = '$$ \\color{red}{\\text{Tu ecuación aparecerá aquí}} $$';
+            } else {
+                let latexCode = convertirBooleanoALatex(textoLimpio);
+                display.innerHTML = '$$ \\color{red}{' + latexCode + '} $$';
+            }
+            if (window.MathJax) {
+                mathjaxPromise = mathjaxPromise.then(() => {
+                    return MathJax.typesetPromise([display]);
+                }).catch((err) => console.log('Error de MathJax:', err.message));
+            }
+            document.getElementById('resultados_algebra').style.display = 'none';
+        }
+
+        function resolverAlgebra() {
+            let input = document.getElementById('input_ecuacion_algebra').value.trim();
+            if (input === "") return;
+
+            let sympyExpr = convertirASympy(input);
+
+            fetch('/simplificar_algebra', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ecuacion_sympy: sympyExpr })
+            })
+            .then(res => res.json())
+            .then(data => {
+                let resDiv = document.getElementById('resultados_algebra');
+                let errDisp = document.getElementById('error_algebra');
+                let dispRes = document.getElementById('display_resultado_algebra');
+                let entradaInline = document.getElementById('entrada_inline');
+
+                resDiv.style.display = 'block';
+
+                if (data.exito) {
+                    errDisp.style.display = 'none';
+                    let originalLatex = sympyToLatex(data.original);
+                    entradaInline.innerHTML = '$$ \\text{Simplifica la expresión } ' + originalLatex + ' $$';
+
+                    let htmlPasos = '';
+                    data.pasos.forEach((paso, index) => {
+                        if (paso.regla.includes("Original")) return; 
+                        let isUltimo = (index === data.pasos.length - 1);
+                        let claseExplicacion = isUltimo ? 'paso-explicacion paso-explicacion-verde' : 'paso-explicacion';
+                        let prevLatex = sympyToLatex(paso.ecuacion_previa);
+                        let currLatex = sympyToLatex(paso.ecuacion);
+                        
+                        let spanPaso = `<span style="display:block; font-size:11px; opacity:0.8; margin-bottom:5px;">PASO ${index + 1}</span>`;
+                        
+                        htmlPasos += `
+                            <div class="paso-fila">
+                                <div class="${claseExplicacion}">
+                                    ${spanPaso}
+                                    ${paso.regla}
+                                </div>
+                                <div class="paso-matematica">
+                                    $$ \\color{red}{\\left(${prevLatex}\\right)} = \\color{red}{\\left(${currLatex}\\right)} $$
+                                </div>
+                            </div>
+                        `;
+                    });
+                    dispRes.innerHTML = htmlPasos;
+
+                    let finalLatex = sympyToLatex(data.final);
+                    document.getElementById('respuesta_final_latex').innerHTML = '$$ ' + originalLatex + ' = ' + finalLatex + ' $$';
+
+                    if (window.MathJax) {
+                        mathjaxPromise = mathjaxPromise.then(() => {
+                            return MathJax.typesetPromise([resDiv]);
+                        });
+                    }
+                } else {
+                    errDisp.innerText = data.error;
+                    errDisp.style.display = 'block';
+                    dispRes.innerHTML = '';
+                    document.getElementById('entrada_inline').innerHTML = '';
+                }
+            })
+            .catch(error => console.error('Error de servidor:', error));
+        }
+
+        function agregarAlAlgebra(valor) {
+            let input = document.getElementById('input_ecuacion_algebra');
+            let inicio = input.selectionStart;
+            let fin = input.selectionEnd;
+            let texto = input.value;
+            input.value = texto.slice(0, inicio) + valor + texto.slice(fin);
+            input.focus();
+            input.selectionStart = inicio + valor.length;
+            input.selectionEnd = inicio + valor.length;
+            actualizarEcuacionAlgebra();
+        }
+
+        function borrarDelAlgebra() {
+            let input = document.getElementById('input_ecuacion_algebra');
+            let cursor = input.selectionStart;
+            if(cursor > 0) {
+                let texto = input.value;
+                input.value = texto.slice(0, cursor - 1) + texto.slice(cursor);
+                input.focus();
+                input.selectionStart = cursor - 1;
+                input.selectionEnd = cursor - 1;
+                actualizarEcuacionAlgebra();
+            }
+        }
+
+        function negarTodaLaEcuacion() {
+            let input = document.getElementById('input_ecuacion_algebra');
+            let texto = input.value.trim();
+            if (texto !== "") {
+                input.value = "(" + texto + ")'";
+                actualizarEcuacionAlgebra();
+            }
+        }
+
+        // MOTOR DE "CÁMARA"
+        let isDraggingCam = false;
+        let lastMouseX, lastMouseY;
+        
+        let cvsElement = document.getElementById('canvas');
+        cvsElement.addEventListener('mousedown', function(e) {
+            if (e.button === 1 || (e.button === 0 && e.altKey)) {
+                isDraggingCam = true;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+                cvsElement.style.cursor = 'grabbing';
+                e.preventDefault();
+            }
+        });
+        
+        window.addEventListener('mouseup', function(e) {
+            if (isDraggingCam) {
+                isDraggingCam = false;
+                cvsElement.style.cursor = 'default';
+            }
+        });
+        
+        window.addEventListener('mousemove', function(e) {
+            if (isDraggingCam && typeof logicSim !== 'undefined') {
+                let dx = e.clientX - lastMouseX;
+                let dy = e.clientY - lastMouseY;
+                if(logicSim.offset) { logicSim.offset.x += dx; logicSim.offset.y += dy; }
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+        });
+
+        // LÓGICA DE KARNAUGH
+        let terminosGuardados = []; 
+        const COLORES_GRUPO = ['#f1c40f', '#2ecc71', '#3498db', '#9b59b6', '#e74c3c'];
+        let modoActual = 'predeterminada';
+        let datosPredeterminados = []; 
+        let gruposPersonalizados = {0: [], 1: [], 2: [], 3: [], 4: []}; 
+        let colorSeleccionadoIdx = 0;
+        let filasActivasGlobales = []; 
+
+        function actualizarInterfaz() {
+            var entradas = parseInt(document.getElementById('input_entradas').value);
+            if(entradas > 4) { entradas = 4; document.getElementById('input_entradas').value = 4; }
+            if(entradas < 2) { entradas = 2; document.getElementById('input_entradas').value = 2; }
+            document.getElementById('input_salida').value = Math.pow(2, entradas);
+
+            var contenedor = document.getElementById('contenedor_variables');
+            var constructor = document.getElementById('constructor_termino');
+            
+            if (contenedor.children.length != entradas) {
+                contenedor.innerHTML = ''; constructor.innerHTML = '';
+                terminosGuardados = []; 
+                document.getElementById('caja_resultado').style.display = 'none'; 
+                document.getElementById('zona_explicacion').style.display = 'none';
+                document.getElementById('texto_objetivo_circuito').innerHTML = "--";
+                limpiarGruposPersonalizados();
+                
+                var alfabeto = ['A', 'B', 'C', 'D']; 
+                for (var i = 0; i < entradas; i++) {
+                    let letraBase = alfabeto[i];
+                    var inputLetra = document.createElement('input');
+                    inputLetra.type = 'text'; inputLetra.id = 'var_name_' + i; inputLetra.className = 'var-box';
+                    inputLetra.maxLength = 1; inputLetra.value = letraBase; inputLetra.oninput = sincronizarDatos; 
+                    contenedor.appendChild(inputLetra);
+
+                    var cajaPequena = document.createElement('div');
+                    cajaPequena.className = 'var-box-small'; cajaPequena.id = 'var_small_' + i;
+                    cajaPequena.innerText = letraBase; cajaPequena.dataset.negada = "false"; 
+                    cajaPequena.onclick = function() {
+                        this.dataset.negada = this.dataset.negada === "false" ? "true" : "false";
+                        this.classList.toggle('negada');
+                    };
+                    constructor.appendChild(cajaPequena);
+                }
+            }
+            sincronizarDatos();
+        }
+
+        function sincronizarDatos() {
+            var entradas = document.getElementById('input_entradas').value;
+            for (var i = 0; i < entradas; i++) {
+                var letraActual = document.getElementById('var_name_' + i).value.toUpperCase() || '?';
+                document.getElementById('var_name_' + i).value = letraActual;
+                document.getElementById('var_small_' + i).innerText = letraActual;
+            }
+            generarTablaVerdad(entradas); generarKMap(entradas); actualizarListaVisual(); 
+        }
+
+        function generarTablaVerdad(entradas) {
+            var filas = Math.pow(2, entradas);
+            var tablaHTML = '<table class="tabla-verdad"><thead><tr>';
+            for(var i=0; i<entradas; i++) tablaHTML += `<th>${document.getElementById('var_name_' + i).value}</th>`;
+            tablaHTML += '<th>Salida</th></tr></thead><tbody>';
+            for(var r=0; r<filas; r++) {
+                tablaHTML += `<tr>`;
+                for(var c=entradas-1; c>=0; c--) tablaHTML += `<td>${(r >> c) & 1}</td>`;
+                tablaHTML += `<td class="res" id="res_fila_${r}">0</td></tr>`;
+            }
+            tablaHTML += '</tbody></table>';
+            document.getElementById('tabla_excel').innerHTML = tablaHTML;
+        }
+
+        function generarKMap(entradas) {
+            let container = document.getElementById('kmap_container');
+            let layouts = {
+                2: { rows: 2, cols: 2, rowH: ['0','1'], colH: ['0','1'], cells: [[0,1],[2,3]], varTop: 1, varLeft: 1 },
+                3: { rows: 2, cols: 4, rowH: ['0','1'], colH: ['00','01','11','10'], cells: [[0,1,3,2],[4,5,7,6]], varTop: 2, varLeft: 1 },
+                4: { rows: 4, cols: 4, rowH: ['00','01','11','10'], colH: ['00','01','11','10'], cells: [[0,1,3,2],[4,5,7,6],[12,13,15,14],[8,9,11,10]], varTop: 2, varLeft: 2 }
+            };
+            let conf = layouts[entradas];
+            let varNames = []; for(let i=0; i<entradas; i++) varNames.push(document.getElementById('var_name_'+i).value);
+            let strLeft = varNames.slice(0, conf.varLeft).join('');
+            let strTop = varNames.slice(conf.varLeft).join('');
+
+            let html = '<table class="kmap-table"><tr>';
+            html += `<th class="kmap-corner"><span class="var-top">${strTop}</span><span class="var-left">${strLeft}</span></th>`;
+            for(let c of conf.colH) html += `<th class="kmap-header">${c}</th>`;
+            html += '</tr>';
+            for(let r=0; r<conf.rows; r++) {
+                html += `<tr><th class="kmap-header">${conf.rowH[r]}</th>`;
+                for(let c=0; c<conf.cols; c++) {
+                    let idx = conf.cells[r][c];
+                    html += `<td class="kmap-cell" id="kmap_cell_${idx}" onclick="kmapCellClick(${idx})">
+                                <div class="kmap-val" id="kmap_val_${idx}">0</div>
+                                <div class="kmap-idx">${idx}</div>
+                             </td>`;
+                }
+                html += `</tr>`;
+            }
+            html += '</table>'; container.innerHTML = html;
+        }
+
+        function agregarTermino() {
+            var entradas = document.getElementById('input_entradas').value;
+            var terminoLogico = ""; var numeroFila = 0; 
+            for (var i = 0; i < entradas; i++) {
+                var caja = document.getElementById('var_small_' + i);
+                if (caja.dataset.negada === "true") { terminoLogico += caja.innerText + "'"; numeroFila = (numeroFila << 1) | 0; } 
+                else { terminoLogico += caja.innerText; numeroFila = (numeroFila << 1) | 1; }
+            }
+            if(!terminosGuardados.find(t => t.fila === numeroFila)) {
+                terminosGuardados.push({ expr: terminoLogico, fila: numeroFila }); actualizarListaVisual();
+            }
+        }
+
+        function eliminarTermino(index) { terminosGuardados.splice(index, 1); actualizarListaVisual(); }
+
+        function actualizarListaVisual() {
+            var lista = document.getElementById('lista_visual'); lista.innerHTML = '';
+            filasActivasGlobales = [];
+            terminosGuardados.forEach((term, index) => {
+                lista.innerHTML += `<div class="badge">${term.expr} <span onclick="eliminarTermino(${index})">✖</span></div>`;
+                filasActivasGlobales.push(term.fila); 
+            });
+            var totalFilas = Math.pow(2, document.getElementById('input_entradas').value);
+            for(var r = 0; r < totalFilas; r++) {
+                var celdaRes = document.getElementById('res_fila_' + r);
+                if (celdaRes) {
+                    celdaRes.innerText = filasActivasGlobales.includes(r) ? "1" : "0";
+                    filasActivasGlobales.includes(r) ? celdaRes.classList.add("activo") : celdaRes.classList.remove("activo");
+                }
+                var kmapRes = document.getElementById('kmap_val_' + r);
+                var kmapCell = document.getElementById('kmap_cell_' + r);
+                if (kmapRes && kmapCell) {
+                    kmapRes.innerText = filasActivasGlobales.includes(r) ? "1" : "0";
+                    if(filasActivasGlobales.includes(r)) {
+                        kmapRes.classList.add("activo-kmap");
+                        if(modoActual === 'personalizada') kmapCell.classList.add("interactive");
+                    } else { kmapRes.classList.remove("activo-kmap"); kmapCell.classList.remove("interactive"); }
+                }
+            }
+            document.getElementById('caja_resultado').style.display = 'none';
+            document.getElementById('zona_explicacion').style.display = 'none';
+            document.getElementById('texto_objetivo_circuito').innerHTML = "--";
+            limpiarGruposPersonalizados(); limpiarColoresMapa();
+        }
+
+        function cambiarModo(modo) {
+            modoActual = modo;
+            document.getElementById('btn_pred').classList.toggle('active', modo === 'predeterminada');
+            document.getElementById('btn_pers').classList.toggle('active', modo === 'personalizada');
+            if(modo === 'personalizada') {
+                document.getElementById('paleta_colores').style.display = 'flex';
+                filasActivasGlobales.forEach(idx => document.getElementById('kmap_cell_' + idx).classList.add('interactive'));
+                renderGruposPersonalizados(); 
+            } else {
+                document.getElementById('paleta_colores').style.display = 'none';
+                filasActivasGlobales.forEach(idx => document.getElementById('kmap_cell_' + idx).classList.remove('interactive'));
+                if(datosPredeterminados.length > 0) dibujarPredeterminado();
+            }
+        }
+
+        function seleccionarColor(idx) {
+            colorSeleccionadoIdx = idx;
+            document.querySelectorAll('.color-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
+        }
+
+        function kmapCellClick(idx) {
+            if(modoActual !== 'personalizada' || !filasActivasGlobales.includes(idx)) return;
+            let indexEnGrupo = gruposPersonalizados[colorSeleccionadoIdx].indexOf(idx);
+            if (indexEnGrupo > -1) gruposPersonalizados[colorSeleccionadoIdx].splice(indexEnGrupo, 1);
+            else gruposPersonalizados[colorSeleccionadoIdx].push(idx);
+            renderGruposPersonalizados();
+        }
+
+        function limpiarGruposPersonalizados() { gruposPersonalizados = {0: [], 1: [], 2: [], 3: [], 4: []}; }
+        function limpiarColoresMapa() {
+            var totalFilas = Math.pow(2, document.getElementById('input_entradas').value);
+            for(var r = 0; r < totalFilas; r++) { let celda = document.getElementById('kmap_cell_' + r); if(celda) celda.style.boxShadow = 'none'; }
+        }
+
+        function aplicarSombrasMapa(mapaColorCelda) {
+            limpiarColoresMapa();
+            for (let idx in mapaColorCelda) {
+                let coloresDeCelda = mapaColorCelda[idx];
+                if(coloresDeCelda.length > 0) {
+                    let shadowStyle = '';
+                    coloresDeCelda.forEach((color, i) => {
+                        let width = (i + 1) * 4; 
+                        shadowStyle += `inset 0 0 0 ${width}px ${color}${i < coloresDeCelda.length-1 ? ',' : ''}`;
+                    });
+                    document.getElementById('kmap_cell_' + idx).style.boxShadow = shadowStyle;
+                }
+            }
+        }
+
+        function enviarDatos(e) {
+            e.preventDefault(); 
+            var entradas = document.getElementById('input_entradas').value;
+            var nombres_vars = []; for (var i = 0; i < entradas; i++) nombres_vars.push(document.getElementById('var_name_' + i).value);
+            
+            fetch('/calcular', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ n_entradas: entradas, nombres_vars: nombres_vars, filas_activas: filasActivasGlobales })
+            })
+            .then(res => res.json())
+            .then(data => {
+                datosPredeterminados = data.explicaciones;
+                document.getElementById('texto_objetivo_circuito').innerHTML = data.resultado;
+
+                if(modoActual === 'predeterminada') {
+                    document.getElementById('caja_resultado').style.display = 'block';
+                    document.getElementById('texto_resultado').innerHTML = data.resultado;
+                    dibujarPredeterminado();
+                } else {
+                    cambiarModo('predeterminada');
+                    document.getElementById('caja_resultado').style.display = 'block';
+                    document.getElementById('texto_resultado').innerHTML = data.resultado;
+                }
+            });
+        }
+
+        function dibujarPredeterminado() {
+            let mapaColoresCelda = {};
+            datosPredeterminados.forEach((exp, i) => {
+                let colorBase = COLORES_GRUPO[i % COLORES_GRUPO.length];
+                exp.indices.forEach(idx => {
+                    if(!mapaColoresCelda[idx]) mapaColoresCelda[idx] = [];
+                    mapaColoresCelda[idx].push(colorBase);
+                });
+            });
+            aplicarSombrasMapa(mapaColoresCelda);
+            
+            var entradas = document.getElementById('input_entradas').value;
+            var nombres_vars = []; for(var i=0; i<entradas; i++) nombres_vars.push(document.getElementById('var_name_' + i).value);
+            
+            dibujarExplicacionesUI(datosPredeterminados, nombres_vars);
+        }
+
+        function renderGruposPersonalizados() {
+            var entradas = document.getElementById('input_entradas').value;
+            var nombres_vars = []; for (var i = 0; i < entradas; i++) nombres_vars.push(document.getElementById('var_name_' + i).value);
+
+            let mapaColoresCelda = {}; let explicacionesGeneradas = []; let ecuacionFinal = [];
+            for(let cIdx = 0; cIdx < 5; cIdx++) {
+                let indices = gruposPersonalizados[cIdx];
+                if(indices.length > 0) {
+                    let colorBase = COLORES_GRUPO[cIdx];
+                    indices.forEach(idx => { if(!mapaColoresCelda[idx]) mapaColoresCelda[idx] = []; mapaColoresCelda[idx].push(colorBase); });
+
+                    let binarios = indices.map(idx => {
+                        let bin = idx.toString(2).padStart(entradas, '0'); return bin.split('').map(Number);
+                    });
+
+                    let fixed_vars = {}; let eliminadas = [];
+                    for(let col=0; col<entradas; col++) {
+                        let primerBit = binarios[0][col]; let cambia = false;
+                        for(let r=1; r<binarios.length; r++) { if(binarios[r][col] !== primerBit) { cambia = true; break; } }
+                        if(cambia) eliminadas.push(nombres_vars[col]);
+                        else fixed_vars[nombres_vars[col]] = primerBit;
+                    }
+
+                    let term_visual = ""; let term_data = [];
+                    nombres_vars.forEach(v => {
+                        if(fixed_vars[v] !== undefined) {
+                            term_visual += fixed_vars[v] === 1 ? v : `<span class="overline">${v}</span>`;
+                            term_data.push({var: v, negated: fixed_vars[v] === 0});
+                        }
+                    });
+                    if(term_visual === "") term_visual = "1";
+
+                    explicacionesGeneradas.push({ colorIndex: cIdx, filas: binarios, eliminadas: eliminadas, term_visual: term_visual, term_data: term_data });
+                    ecuacionFinal.push(term_visual);
+                }
+            }
+            aplicarSombrasMapa(mapaColoresCelda);
+            dibujarExplicacionesUI(explicacionesGeneradas, nombres_vars);
+
+            if(ecuacionFinal.length > 0) {
+                let eqStr = ecuacionFinal.join(" + ");
+                document.getElementById('caja_resultado').style.display = 'block';
+                document.getElementById('texto_resultado').innerHTML = eqStr;
+                document.getElementById('texto_objetivo_circuito').innerHTML = eqStr;
+            } else { 
+                document.getElementById('caja_resultado').style.display = 'none'; 
+                document.getElementById('texto_objetivo_circuito').innerHTML = "--";
+            }
+        }
+
+        function dibujarExplicacionesUI(explicaciones, nombres_vars) {
+            let container = document.getElementById('contenedor_mini_tablas'); let zona = document.getElementById('zona_explicacion');
+            if (!explicaciones || explicaciones.length === 0) { zona.style.display = 'none'; return; }
+            let html = '';
+            explicaciones.forEach((exp, i) => {
+                if(exp.filas.length === 0 && exp.term_visual === '1') {
+                    html += `<div class="mini-tabla-container" style="color: #27ae60; font-weight: bold;">Todo el mapa está agrupado.</div>`; return;
+                }
+                let colorFondo = modoActual === 'personalizada' ? COLORES_GRUPO[exp.colorIndex] : COLORES_GRUPO[i % COLORES_GRUPO.length];
+                html += `<div class="mini-tabla-container"><table class="mini-tabla"><tr>`;
+                nombres_vars.forEach(v => { html += `<th style="background-color: ${colorFondo}; border-color: ${colorFondo};">${v}</th>`; });
+                html += `</tr>`;
+                exp.filas.forEach(fila => {
+                    html += `<tr>`;
+                    fila.forEach((bit, idx) => { html += `<td class="${exp.eliminadas.includes(nombres_vars[idx]) ? 'tachado' : ''}">${bit}</td>`; });
+                    html += `</tr>`;
+                });
+                html += `</table><div style="margin-top: 5px; font-size: 11px; color: #7f8c8d;">resultado</div><div style="font-size: 16px; font-weight: bold;">${exp.term_visual}</div></div>`;
+            });
+            container.innerHTML = html; zona.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
