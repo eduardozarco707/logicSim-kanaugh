@@ -1,17 +1,13 @@
 import re
 import itertools
-import json
 import os
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from sympy import symbols, Or, And, Not
 from sympy.logic import SOPform
 from sympy.parsing.sympy_parser import parse_expr
 from sympy.logic.boolalg import simplify_logic, to_nnf, to_dnf
 
 app = Flask(__name__)
-app.secret_key = 'karnaugh_seguridad_maxima_123' 
-
-ARCHIVO_CODIGOS = 'codigos.json'
 
 @app.route('/scripts/<path:filename>')
 def serve_scripts(filename):
@@ -21,58 +17,17 @@ def serve_scripts(filename):
 def serve_images(filename):
     return send_from_directory('static/images', filename)
 
-def cargar_codigos():
-    if os.path.exists(ARCHIVO_CODIGOS):
-        with open(ARCHIVO_CODIGOS, 'r') as f:
-            return json.load(f)
-    return {}
-
-def guardar_codigos(codigos):
-    with open(ARCHIVO_CODIGOS, 'w') as f:
-        json.dump(codigos, f, indent=4)
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    error = None
-    if request.method == 'POST':
-        codigo_ingresado = request.form.get('codigo', '').strip().upper()
-        codigos = cargar_codigos()
-
-        if codigo_ingresado in codigos:
-            if codigos[codigo_ingresado] == False:
-                codigos[codigo_ingresado] = True
-                guardar_codigos(codigos)
-                session['autenticado'] = True
-                return redirect(url_for('index'))
-            else:
-                error = "Este código ya ha sido utilizado."
-        else:
-            error = "Código inválido o inexistente."
-
-    return render_template('login.html', error=error)
-
-@app.route('/logout')
-def logout():
-    session.pop('autenticado', None)
-    return redirect(url_for('login'))
-
 @app.route('/')
 def index():
-    if not session.get('autenticado'):
-        return redirect(url_for('login'))
+    # Acceso libre directo al simulador
     return render_template('index.html')
 
 @app.route('/circuito')
 def circuito():
-    if not session.get('autenticado'):
-        return redirect(url_for('login'))
     return render_template('circuito.html')
 
 @app.route('/calcular', methods=['POST'])
 def calcular():
-    if not session.get('autenticado'):
-        return jsonify({'error': 'No autorizado'}), 403
-        
     datos = request.get_json()
     n_entradas = int(datos.get('n_entradas', 3))
     filas_activas = datos.get('filas_activas', [])
@@ -161,9 +116,6 @@ def calcular():
 
 @app.route('/simplificar_algebra', methods=['POST'])
 def simplificar_algebra():
-    if not session.get('autenticado'):
-        return jsonify({'error': 'No autorizado'}), 403
-
     datos = request.get_json()
     sympy_str = datos.get('ecuacion_sympy', '')
 
