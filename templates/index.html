@@ -6,6 +6,12 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; overflow-x: hidden; }
         
+        /* ENCABEZADO GLOBAL CON LOGO */
+        .global-header { display: flex; justify-content: center; align-items: center; max-width: 1200px; margin: 0 auto 20px auto; padding: 12px 25px; background: white; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .header-logo-container { display: flex; align-items: center; gap: 15px; }
+        .global-logo { height: 45px; width: auto; object-fit: contain; }
+        .global-title { font-size: 18px; font-weight: bold; color: #2c3e50; letter-spacing: 1px; }
+
         /* PESTAÑAS */
         .tabs-header { display: flex; gap: 5px; max-width: 1200px; margin: auto; margin-bottom: -10px; z-index: 10; position: relative; }
         .tab-btn { padding: 12px 30px; font-size: 16px; font-weight: bold; border: 2px solid #bdc3c7; border-bottom: none; border-radius: 10px 10px 0 0; background: #e9ecef; color: #7f8c8d; cursor: pointer; transition: all 0.2s; outline: none; }
@@ -67,7 +73,7 @@
         .overline { text-decoration: overline; }
 
         /* CIRCUITO CSS */
-        #contenedor_circuito { display: none; gap: 10px; max-width: 100%; margin: 0; align-items: stretch; background: white; padding: 10px; border-radius: 0 12px 12px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); height: calc(100vh - 80px); box-sizing: border-box; }
+        #contenedor_circuito { display: none; gap: 10px; max-width: 100%; margin: 0; align-items: stretch; background: white; padding: 10px; border-radius: 0 12px 12px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); height: calc(100vh - 160px); box-sizing: border-box; }
         .panel-ecuacion-circuito { width: 150px; background: #e8f8f5; border: 1px dashed #1abc9c; border-radius: 6px; padding: 10px; text-align: center; overflow: visible; display: flex; flex-direction: column; }
         .panel-ecuacion-circuito h3 { color: #16a085; font-size: 12px; margin-top: 0; border-bottom: 1px solid #a3e4d7; padding-bottom: 5px; text-transform: uppercase; }
         .obj-ecuacion { font-size: 15px; font-weight: bold; color: #2c3e50; margin: 10px 0; word-wrap: break-word; font-family: monospace; }
@@ -96,20 +102,23 @@
         .btn-resolver:hover { background-color: #1a252f; transform: translateY(2px); box-shadow: 0 2px 0 #1a252f; }
         .btn-resolver:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
 
-        /* VISTA PREVIA EN VIVO (CAJA ROJA RESTAURADA) */
+        /* VISTA PREVIA EN VIVO */
         #display_ecuacion_algebra { font-size: 24px; color: red; text-align: center; margin-top: 20px; padding: 15px; background: #fffdfd; border: 2px dashed #f5b7b1; border-radius: 8px; min-height: 40px; overflow-x: auto; }
 
         /* DISEÑO DE PASOS DE RESOLUCIÓN */
         .seccion-titulo { text-align: center; color: #168e9e; font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 20px; font-family: 'Segoe UI', Arial, sans-serif; text-transform: uppercase; letter-spacing: 1px;}
         .paso-fila { display: flex; align-items: center; margin-bottom: 20px; border: 1px solid #ecf0f1; background: #fdfefe; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; }
         
-        /* Cajas de color para las explicaciones */
         .paso-explicacion { flex: 0 0 35%; background: rgba(230, 126, 34, 0.1); padding: 20px; border-right: 4px solid #e67e22; display: flex; flex-direction: column; justify-content: center; height: 100%; color: #2c3e50; font-size: 14px; font-weight: bold; line-height: 1.4; }
         .paso-explicacion-verde { background: rgba(39, 174, 96, 0.1); border-right: 4px solid #27ae60; }
         
         .paso-matematica { flex: 1; padding: 20px; font-size: 22px; text-align: center; overflow-x: auto; }
         .entrada-original { font-size: 24px; text-align: center; color: #34495e; padding: 15px; border-bottom: 2px dashed #ecf0f1; margin-bottom: 20px; }
-        .respuesta-final-latex { font-size: 24px; text-align: left; max-width: 800px; margin: 10px auto; overflow-x: auto; color: #000; border-top: 1px solid #bdc3c7; padding-top: 20px; }
+        .respuesta-final-latex { font-size: 24px; text-align: left; max-width: 800px; margin: 10px auto; overflow-x: auto; color: #000; border-top: 1px solid #bdc3c7; padding-top: 20px; padding-bottom: 20px; }
+        
+        .bloque-guia-teorica { max-width: 800px; margin: 20px auto; padding: 25px; background: #fdfefe; border: 1px solid #bdc3c7; border-left: 5px solid #168e9e; border-radius: 8px; font-size: 15px; line-height: 1.6; color: #2c3e50; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .bloque-guia-teorica ul { margin: 10px 0 0 0; padding-left: 20px; }
+        .bloque-guia-teorica li { margin-bottom: 12px; }
     </style>
 
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
@@ -179,6 +188,13 @@
     </script>
 </head>
 <body>
+
+    <div class="global-header">
+        <div class="header-logo-container">
+            <img src="/images/logo_app.png" alt="Logo de Aplicación" class="global-logo" onerror="this.style.display='none'">
+            <span class="global-title">LABORATORIO VIRTUAL | EDUARDO RENDÓN</span>
+        </div>
+    </div>
 
     <div class="tabs-header">
         <button id="tabBtn_karnaugh" class="tab-btn active" onclick="cambiarPestana('karnaugh')">Mapa Karnaugh</button>
@@ -295,6 +311,10 @@
             <h2 class="seccion-titulo">RESPUESTA</h2>
             <div class="respuesta-final-latex" id="respuesta_final_latex">
                 </div>
+
+            <h2 class="seccion-titulo" id="titulo_guia_teorica" style="display: none;">Guía de Fórmulas y Procedimiento</h2>
+            <div id="guia_teorica_container" class="bloque-guia-teorica" style="display: none;">
+                </div>
         </div>
     </div>
 
@@ -356,7 +376,7 @@
                 if (!logicSimIniciado) {
                     if (typeof images !== 'undefined' && !images.allImagesLoaded()) { images.onAllLoaded = forzarArranque; } 
                     else { forzarArranque(); }
-                    setTimeout(forzarArranque, 500);
+                    setTimeout(forzarArranque, 500); 
                 } else if (typeof logicSim !== 'undefined') { logicSim.centerOnCanvas(); }
             } else if(pestana === 'algebra') {
                 document.getElementById('tabBtn_algebra').classList.add('active');
@@ -533,6 +553,8 @@
                 let errDisp = document.getElementById('error_algebra');
                 let dispRes = document.getElementById('display_resultado_algebra');
                 let entradaInline = document.getElementById('entrada_inline');
+                let txtTituloGuia = document.getElementById('titulo_guia_teorica');
+                let txtCuerpoGuia = document.getElementById('guia_teorica_container');
 
                 resDiv.style.display = 'block';
 
@@ -542,6 +564,8 @@
                     entradaInline.innerHTML = '$$ \\text{Simplifica la expresión } ' + originalLatex + ' $$';
 
                     let htmlPasos = '';
+                    let leyesDetectadas = new Set();
+
                     data.pasos.forEach((paso, index) => {
                         if (paso.regla.includes("Original")) return; 
                         let isUltimo = (index === data.pasos.length - 1);
@@ -549,7 +573,11 @@
                         let prevLatex = sympyToLatex(paso.ecuacion_previa);
                         let currLatex = sympyToLatex(paso.ecuacion);
                         
-                        let spanPaso = `<span style="display:block; font-size:11px; opacity:0.8; margin-bottom:5px;">PASO ${index + 1}</span>`;
+                        if (paso.regla.includes("De Morgan")) leyesDetectadas.add("demorgan");
+                        if (paso.regla.includes("Distributiva")) leyesDetectadas.add("distributiva");
+                        if (paso.regla.includes("Absorción")) leyesDetectadas.add("absorcion");
+
+                        let spanPaso = `<span style="display:block; font-size:11px; opacity:0.8; margin-bottom:5px;">PASO ${index}</span>`;
                         
                         htmlPasos += `
                             <div class="paso-fila">
@@ -568,6 +596,43 @@
                     let finalLatex = sympyToLatex(data.final);
                     document.getElementById('respuesta_final_latex').innerHTML = '$$ ' + originalLatex + ' = ' + finalLatex + ' $$';
 
+                    let htmlTeoria = `<p>Para resolver la función de manera analítica, el sistema analizó la estructura jerárquica de la ecuación y aplicó los siguientes teoremas fundamentales de Boole:</p><ul>`;
+                    
+                    if (leyesDetectadas.has("demorgan") || input.includes("'")) {
+                        htmlTeoria += `
+                            <li>
+                                <strong>1. Leyes de De Morgan y Doble Negación:</strong> Se aplican para eliminar o distribuir las barras de negación externas sobre sumas o productos. 
+                                <br>• <em>Fórmula del Producto:</em> \\( (A \\cdot B)' = A' + B' \\) 
+                                <br>• <em>Fórmula de la Suma:</em> \\( (A + B)' = A' \\cdot B' \\)
+                                <br>• <em>Involución (Doble Negación):</em> Cualquier variable negada dos veces regresa a su estado original: \\( (A')' = A \\).
+                            </li>
+                        `;
+                    }
+                    if (leyesDetectadas.has("distributiva")) {
+                        htmlTeoria += `
+                            <li>
+                                <strong>2. Ley Distributiva (Expansión):</strong> Permite multiplicar un término exterior por cada elemento interior de un paréntesis para romper agrupaciones complejas y poder emparejar variables similares.
+                                <br>• <em>Fórmula:</em> \\( A \\cdot (B + C) = (A \\cdot B) + (A \\cdot C) \\)
+                            </li>
+                        `;
+                    }
+                    if (leyesDetectadas.has("absorcion") || leyesDetectadas.size === 0) {
+                        htmlTeoria += `
+                            <li>
+                                <strong>3. Leyes de Absorción e Idempotencia (Reducción Máxima):</strong> Se comparan los términos expandidos para eliminar redundancias y simplificar al mínimo.
+                                <br>• <em>Absorción Clásica:</em> \\( A + (A \\cdot B) = A \\) o también \\( A \\cdot (A + B) = A \\)
+                                <br>• <em>Idempotencia:</em> Elementos idénticos sumados o multiplicados se vuelven uno solo: \\( A + A = A \\) y \\( A \\cdot A = A \\).
+                                <br>• <em>Complemento:</em> Una variable operada con su opuesto se cancela: \\( A \\cdot A' = 0 \\) y \\( A + A' = 1 \\).
+                            </li>
+                        `;
+                    }
+
+                    htmlTeoria += `</ul><p style="margin-top:15px; font-weight:bold; color:#168e9e;">Conclusión del desarrollo: Aplicando esta secuencia de reglas en cascada, la expresión se redujo limpiamente hasta llegar a: \\(${finalLatex}\\).</p>`;
+                    
+                    txtCuerpoGuia.innerHTML = htmlTeoria;
+                    txtTituloGuia.style.display = 'block';
+                    txtCuerpoGuia.style.display = 'block';
+
                     if (window.MathJax) {
                         mathjaxPromise = mathjaxPromise.then(() => {
                             return MathJax.typesetPromise([resDiv]);
@@ -577,7 +642,9 @@
                     errDisp.innerText = data.error;
                     errDisp.style.display = 'block';
                     dispRes.innerHTML = '';
-                    document.getElementById('entrada_inline').innerHTML = '';
+                    entradaInline.innerHTML = '';
+                    txtTituloGuia.style.display = 'none';
+                    txtCuerpoGuia.style.display = 'none';
                 }
             })
             .catch(error => console.error('Error de servidor:', error));
